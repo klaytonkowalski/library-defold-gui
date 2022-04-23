@@ -1,0 +1,33 @@
+----------------------------------------------------------------------
+-- DEPENDENCIES
+----------------------------------------------------------------------
+
+local dgui = require "dgui.dgui"
+
+----------------------------------------------------------------------
+-- CONSTANTS
+----------------------------------------------------------------------
+
+local group = 0
+local family = 0
+
+local node_button = hash("node_button")
+local node_toggle_1 = hash("node_toggle_1")
+local node_toggle_2 = hash("node_toggle_2")
+local node_text = hash("node_text")
+
+----------------------------------------------------------------------
+-- ENGINE FUNCTIONS
+----------------------------------------------------------------------
+
+function init(self)
+	dgui.add_button(node_button, function() print("Button") end, group, true)
+	dgui.add_toggle(node_toggle_1, function() print("Toggle 1") end, group, true, family)
+	dgui.set_selected(node_toggle_1, true, false)
+	dgui.add_toggle(node_toggle_2, function() print("Toggle 2") end, group, true, family)
+	dgui.add_text(node_text, function() print("Text") end, group, true, 10)
+end
+
+function on_input(self, action_id, action)
+	dgui.on_input(action_id, action)
+end
