@@ -318,6 +318,20 @@ function dgui.add_text(id, callback, group, enabled, max_length)
 	}
 end
 
+function dgui.remove_widget(id)
+	if widgets[id] then
+		widget.map.idle(widgets[id])
+		widgets[id] = nil
+	end
+end
+
+function dgui.clear_widgets()
+	for _, widget in pairs(widgets) do
+		widget.map.idle(widget)
+	end
+	widgets = {}
+end
+
 function dgui.set_action_ids(mouse_button_left, mouse_wheel_up, mouse_wheel_down, text, key_backspace)
 	if mouse_button_left then
 		action_ids.mouse_button_left = mouse_button_left
