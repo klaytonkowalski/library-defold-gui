@@ -325,7 +325,16 @@ function dgui.remove_widget(id)
 	end
 end
 
-function dgui.clear_widgets()
+function dgui.remove_group(group)
+	for _, widget in pairs(widgets) do
+		if widget.group == group then
+			widget.map.idle(widget)
+			widgets[widget.id] = nil
+		end
+	end
+end
+
+function dgui.remove_all_widgets()
 	for _, widget in pairs(widgets) do
 		widget.map.idle(widget)
 	end
@@ -362,6 +371,30 @@ function dgui.set_style_callbacks(idle, over, active, disabled)
 	end
 	if disabled then
 		style_callbacks.disabled = disabled
+	end
+end
+
+function dgui.set_widget_enabled(id, flag)
+	local widget = widgets[id]
+	if not widget then
+		return
+	end
+	widget.enabled = flag
+	widget.map.idle(widget)
+	if not flag then
+		style_callbacks.disabled(widget.node)
+	end
+end
+
+function dgui.set_group_enabled(group, flag)
+	for _, widget in pairs(widgets) do
+		if widget.group == group then
+			widget.enabled = flag
+			widget.map.idle(widget)
+			if not flag then
+				style_callbacks.disabled(widget.node)
+			end
+		end
 	end
 end
 
