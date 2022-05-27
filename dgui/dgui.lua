@@ -195,7 +195,7 @@ local widget_maps =
 
 local function on_input_mouse_move(action)
 	for _, widget in pairs(widgets) do
-		if widget.enabled then
+		if widget.enabled and not widget.paused then
 			if gui.pick_node(widget.node, action.x, action.y) then
 				if not widget.over then
 					widget.map.over(widget)
@@ -209,7 +209,7 @@ end
 
 local function on_input_mouse_button_left(action)
 	for _, widget in pairs(widgets) do
-		if widget.enabled then
+		if widget.enabled and not widget.paused then
 			if widget.over then
 				if action.pressed then
 					widget.map.down(widget)
@@ -237,7 +237,7 @@ end
 
 local function on_input_text(action)
 	for _, widget in pairs(widgets) do
-		if widget.enabled then
+		if widget.enabled and not widget.paused then
 			if widget.map.id == widget_ids.text then
 				if widget.selected then
 					text_append(widget, action.text)
@@ -249,7 +249,7 @@ end
 
 local function on_input_key_backspace(action)
 	for _, widget in pairs(widgets) do
-		if widget.enabled then
+		if widget.enabled and not widget.paused then
 			if widget.map.id == widget_ids.text then
 				if widget.selected then
 					text_erase(widget)
@@ -275,6 +275,7 @@ function dgui.add_button(id, callback, group, enabled)
 		callback = callback,
 		group = group,
 		enabled = enabled,
+		paused = false,
 		over = false,
 		down = false
 	}
@@ -292,6 +293,7 @@ function dgui.add_toggle(id, callback, group, enabled, family)
 		callback = callback,
 		group = group,
 		enabled = enabled,
+		paused = false,
 		family = family,
 		selected = false,
 		over = false,
@@ -311,6 +313,7 @@ function dgui.add_text(id, callback, group, enabled, max_length)
 		callback = callback,
 		group = group,
 		enabled = enabled,
+		paused = false,
 		max_length = max_length,
 		selected = false,
 		over = false,
@@ -398,6 +401,22 @@ function dgui.set_group_enabled(group, flag)
 	end
 end
 
+function dgui.set_widget_paused(id, flag)
+	local widget = widgets[id]
+	if not widget then
+		return
+	end
+	widget.paused = flag
+end
+
+function dgui.set_group_paused(group, flag)
+	for _, widget in pairs(widgets) do
+		if widget.group == group then
+			widget.paused = flag
+		end
+	end
+end
+
 function dgui.set_selected(id, flag, callback)
 	local widget = widgets[id]
 	if not widget or widget.map.id ~= widget_ids.toggle or widget.selected == flag then
@@ -440,3 +459,4 @@ function dgui.on_input(action_id, action)
 end
 
 return dgui
+
