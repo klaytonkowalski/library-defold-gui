@@ -66,6 +66,14 @@ local widget_ids =
 -- OTHER FUNCTIONS
 ----------------------------------------------------------------------
 
+local function is_idle(widget)
+	return not widget.over and not widget.down
+end
+
+local function is_over(widget)
+	return widget.over and not widget.down
+end
+
 local function toggle_family(family)
 	for _, widget in pairs(widgets) do
 		if widget.family == family then
@@ -365,15 +373,35 @@ end
 function dgui.set_style_callbacks(idle, over, active, disabled)
 	if idle then
 		style_callbacks.idle = idle
+		for _, widget in pairs(widgets) do
+			if is_idle(widget) then
+				style_callbacks.idle(widget.node)
+			end
+		end
 	end
 	if over then
 		style_callbacks.over = over
+		for _, widget in pairs(widgets) do
+			if is_over(widget) then
+				style_callbacks.over(widget.node)
+			end
+		end
 	end
 	if active then
 		style_callbacks.active = active
+		for _, widget in pairs(widgets) do
+			if widget.selected then
+				style_callbacks.active(widget.node)
+			end
+		end
 	end
 	if disabled then
 		style_callbacks.disabled = disabled
+		for _, widget in pairs(widgets) do
+			if not widget.enabled then
+				style_callbacks.disabled(widget.node)
+			end
+		end
 	end
 end
 
@@ -459,4 +487,5 @@ function dgui.on_input(action_id, action)
 end
 
 return dgui
+
 
