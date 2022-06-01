@@ -123,7 +123,16 @@ local function slider_delta(widget, dx, dy)
 	local size = gui.get_size(widget.node)
 	local bounds_position = gui.get_position(widget.bounds_node)
 	local bounds_size = gui.get_size(widget.bounds_node)
-	-- todo
+	if widget.horizontal then
+		local new_position = vmath.vector3(math.min(math.max(position.x + dx, 0), bounds_size.x - size.x), position.y, position.z)
+		gui.set_position(widget.node, new_position)
+		widget.progress = new_position.x / (bounds_size.x - size.x)
+	else
+		local new_position = vmath.vector3(position.x, math.min(math.max(position.y + dy, 0), bounds_size.y - size.y), position.z)
+		gui.set_position(widget.node, new_position)
+		widget.progress = new_position.y / (bounds_size.y - size.y)
+	end
+	widget.callback(widget)
 end
 
 ----------------------------------------------------------------------
@@ -390,7 +399,7 @@ function dgui.add_slider(id, callback, group, enabled, bounds_id, horizontal, pr
 		bounds_id = bounds_id,
 		bounds_node = gui.get_node(bounds_id),
 		horizontal = horizontal,
-		progress = math.max(math.min(progress, 0), 1),
+		progress = math.min(math.max(progress, 0), 1),
 		paused = false,
 		over = false,
 		down = false
@@ -536,7 +545,7 @@ function dgui.set_progress(id, progress, callback)
 	if not widget or widget.map.id ~= widget_ids.slider then
 		return
 	end
-	progress = math.max(math.min(progress, 0), 1)
+	progress = math.min(math.max(progress, 0), 1)
 	slider_move(widget)
 	if callback then
 		widget.callback(widget)
@@ -568,6 +577,7 @@ function dgui.on_input(action_id, action)
 end
 
 return dgui
+
 
 
 
