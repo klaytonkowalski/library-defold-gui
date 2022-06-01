@@ -59,7 +59,8 @@ local widget_ids =
 {
 	button = 1,
 	toggle = 2,
-	text = 3
+	text = 3,
+	slider = 4
 }
 
 ----------------------------------------------------------------------
@@ -97,12 +98,32 @@ local function text_append(widget, text)
 	end
 end
 
-local function text_erase(widget, node)
+local function text_erase(widget)
 	local node_text = gui.get_text(widget.node)
 	if #node_text > 0 then
 		gui.set_text(widget.node, string.sub(node_text, 0, #node_text - 1))
 		widget.callback(widget)
 	end
+end
+
+local function slider_move(widget)
+	local position = gui.get_position(widget.node)
+	local size = gui.get_size(widget.node)
+	local bounds_position = gui.get_position(widget.bounds_node)
+	local bounds_size = gui.get_size(widget.bounds_node)
+	if widget.horizontal then
+		gui.set_position(widget.node, vmath.vector3(widget.progress * (bounds_size.x - size.x), position.y, position.z))
+	else
+		gui.set_position(widget.node, vmath.vector3(widget.progress * (bounds_size.y - size.y), position.y, position.z))
+	end
+end
+
+local function slider_delta(widget, dx, dy)
+	local position = gui.get_position(widget.node)
+	local size = gui.get_size(widget.node)
+	local bounds_position = gui.get_position(widget.bounds_node)
+	local bounds_size = gui.get_size(widget.bounds_node)
+	-- todo
 end
 
 ----------------------------------------------------------------------
@@ -190,11 +211,33 @@ local function text_up(widget)
 	widget.down = false
 end
 
+local function slider_over(widget)
+	widget.over = true
+	style_callbacks.over(widget.node)
+end
+
+local function slider_idle(widget)
+	widget.over = false
+	widget.down = false
+	style_callbacks.idle(widget.node)
+end
+
+local function slider_down(widget)
+	widget.down = true
+	style_callbacks.active(widget.node)
+end
+
+local function slider_up(widget)
+	widget.down = false
+	style_callbacks.over(widget.node)
+end
+
 local widget_maps =
 {
 	button = { id = 1, over = button_over, idle = button_idle, down = button_down, up = button_up },
 	toggle = { id = 2, over = toggle_over, idle = toggle_idle, down = toggle_down, up = toggle_up },
-	text = { id = 3, over = text_over, idle = text_idle, down = text_down, up = text_up }
+	text = { id = 3, over = text_over, idle = text_idle, down = text_down, up = text_up },
+	slider = { id = 4, over = slider_over, idle = slider_idle, down = slider_down, up = slider_up }
 }
 
 ----------------------------------------------------------------------
@@ -210,6 +253,9 @@ local function on_input_mouse_move(action)
 				end
 			elseif widget.over then
 				widget.map.idle(widget)
+			end
+			if widget.map.id == widget_ids.slider and widget.down then
+				slider_delta(widget, action.dx, action.dy)
 			end
 		end
 	end
@@ -327,6 +373,29 @@ function dgui.add_text(id, callback, group, enabled, max_length)
 		over = false,
 		down = false
 	}
+end
+
+function dgui.add_slider(id, callback, group, enabled, bounds_id, horizontal, progress)
+	if widgets[id] then
+		return
+	end
+	widgets[id] =
+	{
+		id = id,
+		node = gui.get_node(id),
+		map = widget_maps.slider,
+		callback = callback,
+		group = group,
+		enabled = enabled,
+		bounds_id = bounds_id,
+		bounds_node = gui.get_node(bounds_id),
+		horizontal = horizontal,
+		progress = math.max(math.min(progress, 0), 1),
+		paused = false,
+		over = false,
+		down = false
+	}
+	slider_move(widgets[id])
 end
 
 function dgui.remove_widget(id)
@@ -462,6 +531,18 @@ function dgui.set_selected(id, flag, callback)
 	end
 end
 
+function dgui.set_progress(id, progress, callback)
+	local widget = widgets[id]
+	if not widget or widget.map.id ~= widget_ids.slider then
+		return
+	end
+	progress = math.max(math.min(progress, 0), 1)
+	slider_move(widget)
+	if callback then
+		widget.callback(widget)
+	end
+end
+
 function dgui.on_input(action_id, action)
 	if not action_id then
 		on_input_mouse_move(action)
@@ -487,5 +568,6 @@ function dgui.on_input(action_id, action)
 end
 
 return dgui
+
 
 
