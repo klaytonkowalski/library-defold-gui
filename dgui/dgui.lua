@@ -60,7 +60,8 @@ local widget_ids =
 	button = 1,
 	toggle = 2,
 	text = 3,
-	slider = 4
+	slider = 4,
+	scroll = 5
 }
 
 ----------------------------------------------------------------------
@@ -132,6 +133,16 @@ local function slider_delta(widget, dx, dy)
 		gui.set_position(widget.node, new_position)
 		widget.progress = new_position.y / (bounds_size.y - size.y)
 	end
+	widget.callback(widget)
+end
+
+local function scroll_backward(widget)
+	widget.progress = math.min(math.max(widget.progress - widget.step, 0), 1)
+	widget.callback(widget)
+end
+
+local function scroll_forward(widget)
+	widget.progress = math.min(math.max(widget.progress + widget.step, 0), 1)
 	widget.callback(widget)
 end
 
@@ -241,12 +252,30 @@ local function slider_up(widget)
 	style_callbacks.over(widget.node)
 end
 
+local function scroll_over(widget)
+	widget.over = true
+end
+
+local function scroll_idle(widget)
+	widget.over = false
+	widget.down = false
+end
+
+local function scroll_down(widget)
+	widget.down = true
+end
+
+local function scroll_up(widget)
+	widget.down = false
+end
+
 local widget_maps =
 {
 	button = { id = 1, over = button_over, idle = button_idle, down = button_down, up = button_up },
 	toggle = { id = 2, over = toggle_over, idle = toggle_idle, down = toggle_down, up = toggle_up },
 	text = { id = 3, over = text_over, idle = text_idle, down = text_down, up = text_up },
-	slider = { id = 4, over = slider_over, idle = slider_idle, down = slider_down, up = slider_up }
+	slider = { id = 4, over = slider_over, idle = slider_idle, down = slider_down, up = slider_up },
+	scroll = { id = 5, over = scroll_over, idle = scroll_idle, down = scroll_down, up = scroll_up }
 }
 
 ----------------------------------------------------------------------
@@ -291,11 +320,27 @@ local function on_input_mouse_button_left(action)
 end
 
 local function on_input_mouse_wheel_up(action)
-	
+	for _, widget in pairs(widgets) do
+		if widget.enabled and not widget.paused then
+			if widget.over then
+				if widget.map.id == widget_ids.scroll then
+					scroll_backward(widget)
+				end
+			end
+		end
+	end
 end
 
 local function on_input_mouse_wheel_down(action)
-	
+	for _, widget in pairs(widgets) do
+		if widget.enabled and not widget.paused then
+			if widget.over then
+				if widget.map.id == widget_ids.scroll then
+					scroll_forward(widget)
+				end
+			end
+		end
+	end
 end
 
 local function on_input_text(action)
@@ -405,6 +450,26 @@ function dgui.add_slider(id, callback, group, enabled, bounds_id, horizontal, pr
 		down = false
 	}
 	slider_move(widgets[id])
+end
+
+function dgui.add_scroll(id, callback, group, enabled, progress, step)
+	if widgets[id] then
+		return
+	end
+	widgets[id] =
+	{
+		id = id,
+		node = gui.get_node(id),
+		map = widget_maps.scroll,
+		callback = callback,
+		group = group,
+		enabled = enabled,
+		progress = math.min(math.max(progress, 0), 1),
+		step = step,
+		paused = false,
+		over = false,
+		down = false
+	}
 end
 
 function dgui.remove_widget(id)
@@ -542,11 +607,13 @@ end
 
 function dgui.set_progress(id, progress, callback)
 	local widget = widgets[id]
-	if not widget or widget.map.id ~= widget_ids.slider then
+	if not widget or (widget.map.id ~= widget_ids.slider and widget.map.id ~= widget_ids.scroll) then
 		return
 	end
-	progress = math.min(math.max(progress, 0), 1)
-	slider_move(widget)
+	widget.progress = math.min(math.max(progress, 0), 1)
+	if widget.map.id == widget_ids.slider then
+		slider_move(widget)
+	end
 	if callback then
 		widget.callback(widget)
 	end
@@ -577,6 +644,7 @@ function dgui.on_input(action_id, action)
 end
 
 return dgui
+
 
 
 
